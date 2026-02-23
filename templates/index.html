@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>IA Aprendendo</title>
+
+<style>
+body {
+    background: #ffdd00;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-family: Arial;
+    overflow: hidden;
+}
+
+.olhos {
+    display: flex;
+    gap: 120px;
+    margin-bottom: 200px;
+}
+
+.olho {
+    width: 70px;
+    height: 70px;
+    background: white;
+    border-radius: 50%;
+    position: relative;
+    overflow: hidden;
+}
+
+.pupila {
+    width: 30px;
+    height: 30px;
+    background: black;
+    border-radius: 50%;
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    transition: 0.05s;
+}
+
+input {
+    padding: 10px;
+    border-radius: 20px;
+    border: none;
+    width: 200px;
+}
+
+button {
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: none;
+    background: black;
+    color: white;
+}
+
+.resposta {
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: bold;
+}
+</style>
+</head>
+<body>
+
+<div class="olhos">
+    <div class="olho"><div class="pupila"></div></div>
+    <div class="olho"><div class="pupila"></div></div>
+</div>
+
+<div>
+    <input type="text" id="mensagem" placeholder="Fale comigo">
+    <button onclick="enviar()">Enviar</button>
+</div>
+
+<div class="resposta" id="resposta"></div>
+
+<script>
+
+let esperandoAprender = false;
+let ultimaPergunta = "";
+
+function enviar() {
+    let texto = document.getElementById("mensagem").value;
+
+    if (esperandoAprender) {
+        fetch("/aprender", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                pergunta: ultimaPergunta,
+                resposta: texto
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("resposta").innerText = "Aprendi 😎";
+            esperandoAprender = false;
+        });
+        return;
+    }
+
+    fetch("/mensagem", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({texto: texto})
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("resposta").innerText = data.resposta;
+
+        if (data.resposta.includes("não sei")) {
+            esperandoAprender = true;
+            ultimaPergunta = texto;
+        }
+    });
+}
+
+// olhos seguem o dedo
+document.addEventListener("mousemove", moverOlhos);
+document.addEventListener("touchmove", moverOlhos);
+
+function moverOlhos(e) {
+    const pupilas = document.querySelectorAll(".pupila");
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+
+    pupilas.forEach(p => {
+        const rect = p.parentElement.getBoundingClientRect();
+        const dx = x - rect.left - rect.width/2;
+        const dy = y - rect.top - rect.height/2;
+        p.style.transform = `translate(${dx/15}px, ${dy/15}px)`;
+    });
+}
+
+</script>
+
+</body>
+</html>
